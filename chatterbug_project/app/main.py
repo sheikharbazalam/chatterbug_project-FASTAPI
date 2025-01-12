@@ -1,3 +1,4 @@
+import random
 from fastapi import FastAPI, HTTPException
 from app.api.password import router as password_router
 from app.api.bitcoin import router as bitcoin_router
@@ -26,13 +27,31 @@ app.add_middleware(
 )
 
 
-#adding logging
+# adding logging
 logging.basicConfig(level=logging.INFO,   format="%(asctime)s - %(levelname)s - %(message)s",
-                    handlers=[logging.FileHandler, logging.StreamHandler])
+                    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
+
+# password generator endpoint
+PASSWORD_ELEMENTS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
 
 
+@app.post("/generate-password")
+async def generate_password(payload: dict):
+    length = payload.get("length")
 
-@app.get("/bitcoin-price")
+    if not length or not isinstance(length, int) or length < 8 or length > 32:
+        logging.error("Invalid password length")
+        raise HTTPException(
+            status_code=400, detail="Invalid password length please provide a lengtth between 8 and 32")
+
+    # Generate a random password
+    password = ''.join(random.choices(
+        PASSWORD_ELEMENTS, k=length))
+    logging.info(f"Generated password of length {length}")
+    return {"password": password, "length": length}
+
+
+@ app.get("/bitcoin-price")
 async def get_bitcoin_price():
     try:
         async with httpx.AsyncClient() as client:
