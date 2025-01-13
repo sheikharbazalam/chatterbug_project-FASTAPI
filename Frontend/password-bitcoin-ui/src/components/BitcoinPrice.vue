@@ -44,7 +44,7 @@
                 console.warn("Too many request , Retrying in 1 minute..");
                 setTimeout(() => {
                     this.fetchBitcoinPrice();
-                }, 60000); // 1 minute
+                }, 60000); 
             } else {
                 this.error = "Error fetching Bitcoin price.";
                 console.error(err);

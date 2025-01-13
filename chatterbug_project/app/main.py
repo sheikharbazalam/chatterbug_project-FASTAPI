@@ -1,10 +1,18 @@
-import random
-from fastapi import FastAPI, HTTPException
+
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 from app.api.password import router as password_router
 from app.api.bitcoin import router as bitcoin_router
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import logging
+import secrets
+import string
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+import aioredis
+from contextlib import asynccontextmanager
+
 
 # Create FastAPI instance
 app = FastAPI()
@@ -31,23 +39,64 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO,   format="%(asctime)s - %(levelname)s - %(message)s",
                     handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
 
-# password generator endpoint
-PASSWORD_ELEMENTS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
+# Rate limiting
 
 
-@app.post("/generate-password")
-async def generate_password(payload: dict):
-    length = payload.get("length")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis = await aioredis.from_url("redis://localhost")
+    await FastAPILimiter.init(redis)
 
-    if not length or not isinstance(length, int) or length < 8 or length > 32:
-        logging.error("Invalid password length")
+    yield
+    await redis.close()
+
+app = FastAPI(lifespan=lifespan)
+
+
+class PasswordRequest(BaseModel):
+    length: int
+    include_uppercase: bool = True
+    include_numbers: bool = True
+    include_special: bool = True
+    include_lowercase: bool = True
+
+
+@app.post("/generate-password", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+async def generate_password(request: PasswordRequest):
+    length = request.length
+
+    # Enforce minimum password length
+    if length < 12:
         raise HTTPException(
-            status_code=400, detail="Invalid password length please provide a lengtth between 8 and 32")
+            status_code=400, detail="Password length must be at least 12 characters.")
 
-    # Generate a random password
-    password = ''.join(random.choices(
-        PASSWORD_ELEMENTS, k=length))
-    logging.info(f"Generated password of length {length}")
+    # Check if at least one type of character is included and build the character set based on the user preferences
+    character_set = ""
+
+    if request.include_lowercase:
+        character_set += string.ascii_lowercase
+    if request.include_uppercase:
+        character_set += string.ascii_uppercase
+
+    if request.include_numbers:
+        character_set += string.digits
+    if request.include_numbers:
+        character_set += string.digits
+
+    if request.include_special:
+        character_set += "!@#$%^&*()"
+
+    if not character_set:
+        logging.error("No character types selected.")
+        raise HTTPException(
+            status_code=400, detail="At least one type of character must be included.")
+
+    # Generate secure password
+    password = ''.join(secrets.choice(character_set) for _ in range(length))
+    # Log the generated password for auditing and debugging purposes
+    logging.info(f"Generated password successfully: {length}")
+
+    # Return the generated password
     return {"password": password, "length": length}
 
 
