@@ -5,7 +5,9 @@
   
       <div class="flex items-center space-x-4">
         <img class="h-max w-40 rounded-full cursor-pointer" :src="user.imageUrl" alt="User Profile"
-        @click="gotToHome" />
+        @click="activeTab = 'gotToHome'"
+        :class="tabClass('gotToHome')"
+         />
   
       </div>
 
@@ -31,11 +33,16 @@
 
     <!-- Main Content -->
     <div class="container mx-auto pt-20">
+ 
       <div v-if="activeTab === 'password'">
         <PasswordGenerator />
       </div>
       <div v-if="activeTab === 'bitcoin'">
         <BitcoinPrice />
+      </div>
+
+      <div v-if="activeTab === 'gotToHome'">
+        <HomePage />
       </div>
     </div>
 
@@ -49,6 +56,7 @@ import PasswordGenerator from "./components/PasswordGenerator.vue";
 import BitcoinPrice from "./components/BitcoinPrice.vue";
 import ErrorMessage from "./components/ErrorMessage.vue";
 import { useRouter } from "vue-router";
+import HomePage from "./components/HomePage.vue";
 
 export default {
   name: "App",
@@ -56,6 +64,7 @@ export default {
     PasswordGenerator,
     BitcoinPrice,
     ErrorMessage,
+    HomePage
   },
   data() {
     return {
@@ -86,6 +95,9 @@ export default {
         : "text-gray-600 hover:text-blue-600";
     },
   },
+  gotToHome(){
+    this.$router.push({name:"HomePage"});
+  }
 };
 </script>
 
