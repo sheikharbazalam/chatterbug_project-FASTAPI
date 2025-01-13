@@ -32,7 +32,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="container mx-auto pt-20">
+    <div class="container mx-auto pt-20 justify-center">
  
       <div v-if="activeTab === 'password'">
         <PasswordGenerator />
