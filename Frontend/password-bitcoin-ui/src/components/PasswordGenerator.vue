@@ -1,13 +1,13 @@
 <template>
   <div class="flex justify-center items-center min-h-screen bg-gray-100">
     <!-- Card Component -->
-    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
-      <h2 class="text-2xl font-semibold text-center mb-4 text-gray-800">Generate a Password</h2>
+    <div class="bg-white shadow-lg rounded-lg p-16 w-full max-w-md">
+      <h2 class="text-2xl font-semibold text-center mb-4  text-gray-800">Generate a Password</h2>
 
       <!-- Input Field -->
-      <div class="mb-4">
+      <div class="mb-6">
         <label for="passwordLength" class="block text-gray-600 font-medium mb-2">
-          Enter Password Length (8-32):
+          Enter Password Length (12-32):
         </label>
         <input
           id="passwordLength"

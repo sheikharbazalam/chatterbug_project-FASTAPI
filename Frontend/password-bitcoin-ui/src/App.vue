@@ -12,8 +12,7 @@
       </div>
 
       <div class="flex space-x-4 ">
-        <div class="inline-flex items-center rounded-md  px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"> 
-        <button 
+        <div class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white-600">        <button 
           @click="activeTab = 'password'"
           :class="tabClass('password')"
         >
