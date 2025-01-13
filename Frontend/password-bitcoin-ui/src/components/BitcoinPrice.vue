@@ -1,19 +1,24 @@
 <!-- src/components/BitcoinPrice.vue -->
 <template>
-    <div class="bitcoin-price">
-      <h2>Bitcoin Price</h2>
-      <button @click="fetchBitcoinPrice">Get Bitcoin Price</button>
+  <div class="bitcoin-price">
+    <h2>Bitcoin Price</h2>
+    <button @click="fetchBitcoinPrice">
+      Get Bitcoin Price
+    </button>
   
-      <div v-if="bitcoinPrice">
-        <h3>Current Bitcoin Price:</h3>
-        <p>${{ bitcoinPrice }}</p>
-      </div>
-  
-      <div v-if="error" class="error">
-        <p>{{ error }}</p>
-      </div>
+    <div v-if="bitcoinPrice">
+      <h3>Current Bitcoin Price:</h3>
+      <p>${{ bitcoinPrice }}</p>
     </div>
-  </template>
+  
+    <div
+      v-if="error"
+      class="error"
+    >
+      <p>{{ error }}</p>
+    </div>
+  </div>
+</template>
   
   <script>
   import axios from "axios";
@@ -27,6 +32,21 @@
         intervalId:null,
       };
     },
+    mounted(){
+        //here we fetching the Bitcoin price immediately when the compoennt is mounted
+        this.fetchBitcoinPrice();
+
+        //here we set up a timer to fetch the Bitcoin price every 10 seconds
+        this.intervalId = setInterval(() => {
+          this.fetchBitcoinPrice();
+        }, 60000);
+      
+    },
+    beforeUnmount(){
+        //here we clear the timer when the component is destroyed to prevent memory leaks
+        clearInterval(this.intervalId);
+    },
+   
     methods: {
       // Fetch Bitcoin price method
       async fetchBitcoinPrice() {
@@ -44,28 +64,19 @@
                 console.warn("Too many request , Retrying in 1 minute..");
                 setTimeout(() => {
                     this.fetchBitcoinPrice();
-                }, 60000); 
-            } else {
+                }, 600000); 
+            } else if (err.message === "QUOTA_BYTES quota exceed"){
+              localStorage.clear();
+              sessionStorage.clear();
+              this.error = "Session data cleared due to exceeding quota. Please try again later.";
+            } 
+            else {
                 this.error = "Error fetching Bitcoin price.";
                 console.error(err);
             }
          
         }
       },
-    },
-    mounted(){
-        //here we fetching the Bitcoin price immediately when the compoennt is mounted
-        this.fetchBitcoinPrice();
-
-        //here we set up a timer to fetch the Bitcoin price every 10 seconds
-        this.intervalId = setInterval(() => {
-          this.fetchBitcoinPrice();
-        }, 60000);
-      
-    },
-    beforeUnmount(){
-        //here we clear the timer when the component is destroyed to prevent memory leaks
-        clearInterval(this.intervalId);
     },
   };
   </script>

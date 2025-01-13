@@ -15,22 +15,33 @@ from contextlib import asynccontextmanager
 
 
 # Create FastAPI instance
-app = FastAPI()
 
-# Add a route to fetch the current Bitcoin price
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis = await aioredis.from_url("redis://localhost")
+    await FastAPILimiter.init(redis)
+
+    yield
+    await redis.close()
+
+app = FastAPI(lifespan=lifespan)
+
+
+# app = FastAPI()
+
+# Define allowed origins
 origins = [
-    # Vue.js frontend (replace with your actual frontend URL)
-    "http://localhost:8080",
-    "http://localhost",       # Localhost can also be used during development
-    # For example, if using React or Vue or Angular any other frontend on this port
-    "http://localhost:3000",
+    "http://localhost:8080",  # Vue.js frontend on localhost
+
 ]
 
+# Add CORS middleware to FastAPI app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Allow these origins to access your backend
+    allow_origins=["*"],  # Allow these origins to access your backend
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
     allow_headers=["*"],  # Allow all headers
 )
 
@@ -50,8 +61,6 @@ async def lifespan(app: FastAPI):
     yield
     await redis.close()
 
-app = FastAPI(lifespan=lifespan)
-
 
 class PasswordRequest(BaseModel):
     length: int
@@ -61,7 +70,7 @@ class PasswordRequest(BaseModel):
     include_lowercase: bool = True
 
 
-@app.post("/generate-password", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@app.post("/generate-password", dependencies=[Depends(RateLimiter(times=50, seconds=60))])
 async def generate_password(request: PasswordRequest):
     length = request.length
 
@@ -80,8 +89,6 @@ async def generate_password(request: PasswordRequest):
 
     if request.include_numbers:
         character_set += string.digits
-    if request.include_numbers:
-        character_set += string.digits
 
     if request.include_special:
         character_set += "!@#$%^&*()"
@@ -94,13 +101,13 @@ async def generate_password(request: PasswordRequest):
     # Generate secure password
     password = ''.join(secrets.choice(character_set) for _ in range(length))
     # Log the generated password for auditing and debugging purposes
-    logging.info(f"Generated password successfully: {length}")
+    logging.info(f"Generated password successfully: {password}")
 
     # Return the generated password
     return {"password": password, "length": length}
 
 
-@ app.get("/bitcoin-price")
+@app.get("/bitcoin-price")
 async def get_bitcoin_price():
     try:
         async with httpx.AsyncClient() as client:
@@ -121,3 +128,8 @@ async def get_bitcoin_price():
 # Include routers
 app.include_router(password_router)
 app.include_router(bitcoin_router)
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}

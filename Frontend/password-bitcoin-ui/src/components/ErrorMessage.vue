@@ -1,8 +1,11 @@
 <template>
-    <div v-if="message" class="error">
-      <p>{{ message }}</p>
-    </div>
-  </template>
+  <div
+    v-if="message"
+    class="error"
+  >
+    <p>{{ message }}</p>
+  </div>
+</template>
   
   <script>
   export default {
