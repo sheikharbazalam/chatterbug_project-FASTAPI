@@ -10,7 +10,7 @@ router = APIRouter()
 # configure Logging
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class PasswordRequest(BaseModel):
@@ -29,7 +29,7 @@ def get_password_generator():
 
 # Password generation endpoint
 
-
+# 
 @router.post("/generate-password",
              response_description="Generate a secure password",
              responses={
@@ -39,17 +39,20 @@ def get_password_generator():
                  500: {"description": "Internal Server Error"}
              },
              )
+
+
 async def generate_password_route(req: PasswordRequest, generate_password=Depends(get_password_generator)):
     try:
         # Generate the password using the utility function
         password = generate_password(
             req.length, req.include_special, req.include_numbers)
-        logger.info("Generated password successfully")
+        log.info("Generated password successfully")
         return {"password": password, "length": len(password)}
     except PasswordGeneration as e:
-        logging.error("Error generating password: {e}")
+        log.error("Error generating password: {e}")
+        
         raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
-        logging.error(f"Internal error: {e}")
+        log.error(f"Internal error: {e}")
         raise HTTPException(
             status_code=400, detail="An unexpected error occurred")

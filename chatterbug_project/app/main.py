@@ -1,4 +1,3 @@
-
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from app.api.password import router as password_router
@@ -12,56 +11,51 @@ from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 import aioredis
 from contextlib import asynccontextmanager
+import app
 
 
-# Create FastAPI instance
-
+# Create FastAPI instance with lifespan context
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    redis = await aioredis.from_url("redis://localhost")
+    # Initialize Redis for rate limiting
+    redis = await aioredis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(redis)
-
     yield
     await redis.close()
+
 
 app = FastAPI(lifespan=lifespan)
 
 
-# app = FastAPI()
+# async def startup_event():
+# redis = await aioredis.from_url("redis://localhost", decode_responses=True)
+# await FastAPILimiter.init(redis)
+
 
 # Define allowed origins
 origins = [
     "http://localhost:8080",  # Vue.js frontend on localhost
-
 ]
 
 # Add CORS middleware to FastAPI app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow these origins to access your backend
+    allow_origins=origins,  # Restrict to specific origins
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
     allow_headers=["*"],  # Allow all headers
 )
 
-
-# adding logging
-logging.basicConfig(level=logging.INFO,   format="%(asctime)s - %(levelname)s - %(message)s",
-                    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
-
-# Rate limiting
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    redis = await aioredis.from_url("redis://localhost")
-    await FastAPILimiter.init(redis)
-
-    yield
-    await redis.close()
+# Add logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()]
+)
 
 
+# Request model for password generation
 class PasswordRequest(BaseModel):
     length: int
     include_uppercase: bool = True
@@ -77,30 +71,28 @@ async def generate_password(request: PasswordRequest):
     # Enforce minimum password length
     if length < 12:
         raise HTTPException(
-            status_code=400, detail="Password length must be at least 12 characters.")
+            status_code=400, detail="Password length must be at least 12 characters."
+        )
 
     # Check if at least one type of character is included and build the character set based on the user preferences
     character_set = ""
-
     if request.include_lowercase:
         character_set += string.ascii_lowercase
     if request.include_uppercase:
         character_set += string.ascii_uppercase
-
     if request.include_numbers:
         character_set += string.digits
-
     if request.include_special:
         character_set += "!@#$%^&*()"
 
     if not character_set:
         logging.error("No character types selected.")
         raise HTTPException(
-            status_code=400, detail="At least one type of character must be included.")
+            status_code=400, detail="At least one type of character must be included."
+        )
 
     # Generate secure password
     password = ''.join(secrets.choice(character_set) for _ in range(length))
-    # Log the generated password for auditing and debugging purposes
     logging.info(f"Generated password successfully: {password}")
 
     # Return the generated password
@@ -120,10 +112,11 @@ async def get_bitcoin_price():
         else:
             raise HTTPException(status_code=response.status_code,
                                 detail="Error fetching Bitcoin price")
-
     except httpx.RequestError as e:
+        logging.error(f"Error connecting to the API: {e}")
         raise HTTPException(
             status_code=500, detail=f"Error connecting to the API: {e}")
+
 
 # Include routers
 app.include_router(password_router)
