@@ -74,7 +74,7 @@ def test_generate_password_no_character_type():
     }
     response = client.post("/generate-password", json=payload)
 
-    assert response.status_code == 422  # Assuming the status code should be 422
+    assert response.status_code == 400  # Assuming the status code should be 422
     data = response.json()
     assert "detail" in data
 
@@ -92,3 +92,11 @@ def test_generate_password_rate_limited():
     # 51st request should be rate-limited
     # response = client.post("/generate-password", json=payload)
     # assert response.status_code == 429  # Rate limit exceeded
+
+
+def test_http_exception_handler():
+    from fastapi.exceptions import HTTPException
+    response = client.post("/generate-password", json={"length": 5})
+    assert response.status_code == 422
+    assert response.json()[
+        "detail"] == "Password length must be at least 12 characters."

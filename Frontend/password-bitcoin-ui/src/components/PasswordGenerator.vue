@@ -91,6 +91,30 @@ export default {
     async generatePassword() {
       localStorage.clear();
       sessionStorage.clear();
+      //clear previous errors
+      this.error = "";
+      
+
+      // Check if password length is within the allowed range
+      if (this.passwordLength < 12 || this.passwordLength > 128) {
+        this.error = "Password length at least 12 characters.";
+        return;
+      }
+
+      // Check if at least one option is selected
+      if (!this.includeNumbers &&!this.includeSpecialChars) {
+        this.error = "Please select at least one password option.";
+        return;
+      }
+
+      // Generate password and store it in local storage
+      // This prevents the password from being displayed in the browser's history or in the developer tools
+      //const password = await this.generateSecurePassword();
+      //localStorage.setItem("password", password);
+
+      
+      // Send password to server for validation and storage
+      // This prevents the password from being exposed in the browser's network tab
       try {
         const response = await axios.post(`http://localhost:8000/generate-password`, {
           length: this.passwordLength,
