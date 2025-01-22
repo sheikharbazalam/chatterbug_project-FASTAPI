@@ -12,7 +12,7 @@ def generate_password(length: int, include_special: bool, include_numbers: bool)
 
     if not (include_special or include_numbers):
         raise ValueError(
-            "Password should include at least one type of character (letters, numbers, or special characters).")
+            "At least one character type must be selected.")
     chars = string.ascii_letters
     if include_numbers:
         chars += string.digits

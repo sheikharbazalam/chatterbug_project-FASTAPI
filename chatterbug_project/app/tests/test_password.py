@@ -37,13 +37,13 @@ def test_generate_password_valid():
 
 
 def test_generate_password_invalid_length():
-    result = generate_password(11, True, True)
-    print("password is " + str(result))
-    print("length is " + str(len(str(result))))
+    # result = generate_password(11, True, True)
+    # print("password is " + str(result))
+    # print("length is " + str(len(str(result))))
     with pytest.raises(ValueError, match=".*Password length must be between 12 and 128.*"):
         generate_password(11, True, True)
 
 
 def test_generate_password_no_character_type():
-    with pytest.raises(ValueError, match=".*At least one character type must be selected."):
+    with pytest.raises(ValueError, match=".*At least one character type must be selected.*"):
         generate_password(12, False, False)
