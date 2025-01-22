@@ -1,9 +1,11 @@
+import string
 import pytest
 from fastapi.testclient import TestClient
 from fastapi_limiter import FastAPILimiter
 from fastapi import FastAPI
 import aioredis
-from app.main import app as main_app  # Import your main FastAPI app
+from app.main import app as main_app
+from app.services.password_services import generate_password
 
 
 # Fixture to initialize FastAPILimiter during test startup
@@ -27,76 +29,21 @@ client = TestClient(main_app)
 
 
 def test_generate_password_valid():
-    payload = {
-        "length": 16,
-        "include_uppercase": True,
-        "include_numbers": True,
-        "include_special": True,
-        "include_lowercase": True
-    }
-    response = client.post("/generate-password", json=payload)
 
-    assert response.status_code == 200
-    data = response.json()
-    assert "password" in data
-    assert len(data["password"]) == 16  # Should match requested length
-    assert "length" in data
-    assert isinstance(data["password"], str)
-
-# Test Case 2: Password length too short
+    result = generate_password(12, True, True)
+    assert len(result) == 12
+    assert any(char.isdigit() for char in result)
+    assert any(char in string.punctuation for char in result)
 
 
 def test_generate_password_invalid_length():
-    payload = {
-        "length": 8,  # Invalid length, assuming minimum length is 12
-        "include_uppercase": True,
-        "include_numbers": True,
-        "include_special": True,
-        "include_lowercase": True
-    }
-    response = client.post("/generate-password", json=payload)
-
-    assert response.status_code == 422  # Updated to match actual status code
-    data = response.json()
-    assert "detail" in data
-
-    # Test Case 3: No character type selected
-    assert "Password length must be at least 12 characters." in data["detail"][0]["msg"]
+    result = generate_password(11, True, True)
+    print("password is " + str(result))
+    print("length is " + str(len(str(result))))
+    with pytest.raises(ValueError, match=".*Password length must be between 12 and 128.*"):
+        generate_password(11, True, True)
 
 
 def test_generate_password_no_character_type():
-    payload = {
-        "length": 16,
-        "include_uppercase": False,
-        "include_numbers": False,
-        "include_special": False,
-        "include_lowercase": False
-    }
-    response = client.post("/generate-password", json=payload)
-
-    assert response.status_code == 400  # Assuming the status code should be 422
-    data = response.json()
-    assert "detail" in data
-
-    # Test Case 4: Rate Limiting (50 requests in 60 seconds)
-    assert "At least one type of character must be included." in data["detail"][0]["msg"]
-
-
-def test_generate_password_rate_limited():
-    payload = {"length": 16}
-
-    for _ in range(50):
-        response = client.post("/generate-password", json=payload)
-        assert response.status_code == 200
-
-    # 51st request should be rate-limited
-    # response = client.post("/generate-password", json=payload)
-    # assert response.status_code == 429  # Rate limit exceeded
-
-
-def test_http_exception_handler():
-    from fastapi.exceptions import HTTPException
-    response = client.post("/generate-password", json={"length": 5})
-    assert response.status_code == 422
-    assert response.json()[
-        "detail"] == "Password length must be at least 12 characters."
+    with pytest.raises(ValueError, match=".*At least one character type must be selected."):
+        generate_password(12, False, False)

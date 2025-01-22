@@ -24,7 +24,7 @@ def get_password_generator():
 async def generate_password_route(req: PasswordRequest, generate_password=Depends(get_password_generator)):
     if req.length < 12 or req.length > 128:
         raise HTTPException(
-         status_code=400, detail="Password length must be at least 12 characters.")
+            status_code=400, detail="Password length must be at least 12 characters.")
     if not (req.include_special or req.include_numbers):
         raise HTTPException(
             status_code=400, detail="At least one character type must be included.")
