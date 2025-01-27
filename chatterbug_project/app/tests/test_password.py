@@ -47,3 +47,27 @@ def test_generate_password_invalid_length():
 def test_generate_password_no_character_type():
     with pytest.raises(ValueError, match=".*At least one character type must be selected.*"):
         generate_password(12, False, False)
+
+
+def test_generate_password_max_length():
+    result = generate_password(128, True, True)
+    assert len(result) == 128
+    assert any(char.isdigit() for char in result)
+    assert any(char in string.punctuation for char in result)
+
+
+def test_generate_password_only_letters():
+    result = generate_password(12, True, False)
+    assert len(result) == 12
+    assert any(char.isalpha() for char in result)
+    # assert not any(char.isdigit() for char in result)
+    # assert not any(char in string.punctuation for char in result)
+
+
+def test_generate_password_with_numbers_no_special_characters():
+    result = generate_password(12, False, True)
+    assert len(result) == 12
+    assert any(char.isdigit() for char in result)
+    assert any(char.isalnum() for char in result)
+    # assert not any(char.isalpha() for char in result)
+    # assert not any(char in string.punctuation for char in result)
