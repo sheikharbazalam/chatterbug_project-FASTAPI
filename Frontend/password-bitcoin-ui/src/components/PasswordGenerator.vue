@@ -66,6 +66,15 @@
         <div v-if="copied" class="text-green-600 font-medium mt-2">Copied to clipboard!</div>
       </div>
 
+      <!-- Password Strength Indicator -->
+      <div v-if="passwordStrength" class="mt-4">
+        <h3 class="text-lg font-medium text-gray-700">Password Strength:</h3>
+        <span class ="px-3 py-1 rounded-full text-white" :class="{'bg-green-500':passwordStrength === 'Strong',
+          'bg-yellow-500': passwordStrength === 'Moderate',
+          'bg-red-500': passwordStrength === 'Weak', }">{{ passwordStrength }} </span> 
+
+      </div>
+
       <!-- Error Message -->
       <p v-if="error" class="text-red-600 font-medium mt-4">{{ error }}</p>
     </div>
@@ -83,16 +92,19 @@ export default {
       includeNumbers: true,
       includeSpecialChars: true,
       generatedPassword: "",
+      passwordStrength: "",
       error: "",
       copied: false,
     };
   },
+  
   methods: {
     async generatePassword() {
       localStorage.clear();
       sessionStorage.clear();
       //clear previous errors
       this.error = "";
+      this.passwordStrength = "";
       
 
       // Check if password length is within the allowed range
@@ -121,12 +133,21 @@ export default {
           includeNumbers: this.includeNumbers,
           includeSpecialChars: this.includeSpecialChars,
         });
+        //set password and strength
+     
+        
+       
+        
         if (response.data.password) {
           this.generatedPassword = response.data.password;
+          
           this.error = "";
+          //update the password strength
+          this.updatePasswordStrength(this.generatedPassword);
         } else {
           this.error = response.data.error;
         }
+
       } catch (err) {
         if (err.message === "QUOTA_BYTES quota exceeded") {
           localStorage.clear();
@@ -137,7 +158,28 @@ export default {
           console.error(err);
         }
       }
+      
+      
     },
+
+    updatePasswordStrength(password) {
+      const lengthCriteria = password.length >= 16;
+      const numberCriteria = /\d/.test(password); // Contains numbers
+      const specialCharCriteria = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Contains special characters
+
+      // Determine password strength based on criteria
+      if (password.length < 12) {
+        this.passwordStrength = "Too Short";
+      } else if (lengthCriteria && numberCriteria && specialCharCriteria) {
+        this.passwordStrength = "Strong";
+      } else if (lengthCriteria && (numberCriteria || specialCharCriteria)) {
+        this.passwordStrength = "Medium";
+      } else {
+        this.passwordStrength = "Weak";
+      }
+    },
+
+    
     copyToClipboard() {
       navigator.clipboard
         .writeText(this.generatedPassword)

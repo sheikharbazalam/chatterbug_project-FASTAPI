@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from app.services.password_services import generate_password
+from app.services.password_services import check_password_strength, generate_password
 from fastapi.responses import JSONResponse
 
 
@@ -32,7 +32,15 @@ async def generate_password_route(req: PasswordRequest, generate_password=Depend
     try:
         password = generate_password(
             req.length, req.include_special, req.include_numbers)
-        return {"password": password, "length": len(password)}
+        strength = check_password_strength(password)
+        return {"password": password, "strength": strength}
     except Exception as e:
         raise HTTPException(
             status_code=500, detail="An unexpected error occurred")
+
+
+# Endpoint to check password strength
+@router.post("/check-password-strength")
+def check_password_strength_route(password: str):
+    strength = check_password_strength(password)
+    return {"password": password,  "strength": strength}
