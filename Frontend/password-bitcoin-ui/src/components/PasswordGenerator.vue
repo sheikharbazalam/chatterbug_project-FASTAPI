@@ -70,7 +70,7 @@
       <div v-if="passwordStrength" class="mt-4">
         <h3 class="text-lg font-medium text-gray-700">Password Strength:</h3>
         <span class ="px-3 py-1 rounded-full text-white" :class="{'bg-green-500':passwordStrength === 'Strong',
-          'bg-yellow-500': passwordStrength === 'Moderate',
+          'bg-yellow-500': passwordStrength === 'Medium',
           'bg-red-500': passwordStrength === 'Weak', }">{{ passwordStrength }} </span> 
 
       </div>
@@ -92,7 +92,7 @@ export default {
       includeNumbers: true,
       includeSpecialChars: true,
       generatedPassword: "",
-      passwordStrength: "",
+      passwordStrength: " ",
       error: "",
       copied: false,
     };
@@ -162,22 +162,34 @@ export default {
       
     },
 
-    updatePasswordStrength(password) {
-      const lengthCriteria = password.length >= 16;
-      const numberCriteria = /\d/.test(password); // Contains numbers
-      const specialCharCriteria = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Contains special characters
+updatePasswordStrength(password) {
+  console.log("password:", password);
+  console.log("password length:", password.length);
+  const lengthCriteria = password.length >= 16;
+  const numberCriteria = /\d/.test(password); // Contains at least one number
+  const specialCharCriteria = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Contains at least one special character
 
-      // Determine password strength based on criteria
-      if (password.length < 12) {
-        this.passwordStrength = "Too Short";
-      } else if (lengthCriteria && numberCriteria && specialCharCriteria) {
-        this.passwordStrength = "Strong";
-      } else if (lengthCriteria && (numberCriteria || specialCharCriteria)) {
-        this.passwordStrength = "Medium";
-      } else {
-        this.passwordStrength = "Weak";
-      }
-    },
+  console.log("Length Criteria:", lengthCriteria);
+  console.log("Number Criteria:", numberCriteria);
+  console.log("Special Char Criteria:", specialCharCriteria);
+
+  let newStrength = "Weak";//Set the default strength to weak
+
+  // Determine password strength based on criteria
+  if (password.length < 12) {
+    newStrength = "Too Short"; // Always too short if <12
+  } else if (lengthCriteria && numberCriteria && specialCharCriteria) {
+    newStrength = "Strong"; // Meets all criteria
+  } else if (lengthCriteria && (numberCriteria || specialCharCriteria)) {
+    newStrength = "Medium"; // Length met + at least 1 other criterion
+  } 
+  console.log("Password Strength:", this.passwordStrength);
+  this.passwordStrength = newStrength;
+
+  this.$nextTick(() => {
+    console.log("Updated Password Strength:", this.passwordStrength);
+  });
+},
 
     
     copyToClipboard() {
